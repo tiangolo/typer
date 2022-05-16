@@ -181,6 +181,7 @@ class ParameterInfo:
         hidden: bool = False,
         # Choice
         case_sensitive: bool = True,
+        names: bool = False,
         # Numbers
         min: Optional[Union[int, float]] = None,
         max: Optional[Union[int, float]] = None,
@@ -220,6 +221,7 @@ class ParameterInfo:
         self.hidden = hidden
         # Choice
         self.case_sensitive = case_sensitive
+        self.names = names
         # Numbers
         self.min = min
         self.max = max
@@ -278,6 +280,7 @@ class OptionInfo(ParameterInfo):
         show_envvar: bool = True,
         # Choice
         case_sensitive: bool = True,
+        names: bool = False,
         # Numbers
         min: Optional[Union[int, float]] = None,
         max: Optional[Union[int, float]] = None,
@@ -318,6 +321,7 @@ class OptionInfo(ParameterInfo):
             hidden=hidden,
             # Choice
             case_sensitive=case_sensitive,
+            names=names,
             # Numbers
             min=min,
             max=max,
@@ -377,6 +381,7 @@ class ArgumentInfo(ParameterInfo):
         hidden: bool = False,
         # Choice
         case_sensitive: bool = True,
+        names: bool = False,
         # Numbers
         min: Optional[Union[int, float]] = None,
         max: Optional[Union[int, float]] = None,
@@ -417,6 +422,7 @@ class ArgumentInfo(ParameterInfo):
             hidden=hidden,
             # Choice
             case_sensitive=case_sensitive,
+            names=names,
             # Numbers
             min=min,
             max=max,
