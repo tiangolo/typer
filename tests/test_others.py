@@ -144,8 +144,7 @@ def test_completion_untyped_parameters():
     file_path = Path(__file__).parent / "assets/completion_no_types.py"
     result = subprocess.run(
         [sys.executable, "-m", "coverage", "run", str(file_path)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         encoding="utf-8",
         env={
             **os.environ,
@@ -166,8 +165,7 @@ def test_completion_untyped_parameters():
 
     result = subprocess.run(
         [sys.executable, "-m", "coverage", "run", str(file_path)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         encoding="utf-8",
     )
     assert "Hello World" in result.stdout
@@ -177,8 +175,7 @@ def test_completion_untyped_parameters_different_order_correct_names():
     file_path = Path(__file__).parent / "assets/completion_no_types_order.py"
     result = subprocess.run(
         [sys.executable, "-m", "coverage", "run", str(file_path)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         encoding="utf-8",
         env={
             **os.environ,
@@ -199,8 +196,7 @@ def test_completion_untyped_parameters_different_order_correct_names():
 
     result = subprocess.run(
         [sys.executable, "-m", "coverage", "run", str(file_path)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         encoding="utf-8",
     )
     assert "Hello World" in result.stdout
