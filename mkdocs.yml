@@ -66,6 +66,7 @@ nav:
           - Path: tutorial/parameter-types/path.md
           - File: tutorial/parameter-types/file.md
           - Custom Types: tutorial/parameter-types/custom-types.md
+          - Pydantic Types: tutorial/parameter-types/pydantic-types.md
       - SubCommands - Command Groups:
           - SubCommands - Command Groups - Intro: tutorial/subcommands/index.md
           - Add Typer: tutorial/subcommands/add-typer.md
