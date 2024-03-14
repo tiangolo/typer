@@ -13,6 +13,7 @@ from uuid import UUID
 
 import click
 
+from ._typing import is_literal_type, literal_values
 from .completion import get_completion_inspect_parameters
 from .core import MarkupMode, TyperArgument, TyperCommand, TyperGroup, TyperOption
 from .models import (
@@ -776,6 +777,13 @@ def get_click_type(
             [item.value for item in annotation],
             case_sensitive=parameter_info.case_sensitive,
         )
+
+    if is_literal_type(annotation):
+        return click.Choice(
+            literal_values(annotation),
+            case_sensitive=parameter_info.case_sensitive,
+        )
+
     raise RuntimeError(f"Type not yet supported: {annotation}")  # pragma no cover
 
 
