@@ -4,18 +4,21 @@ import sys
 from pathlib import Path
 from unittest import mock
 
+import pytest
 import shellingham
 import typer
 from typer.testing import CliRunner
 
-from docs_src.commands.index import tutorial001 as mod
+from docs_src.asynchronous import tutorial001 as async_mod
+from docs_src.commands.index import tutorial001 as sync_mod
+
+mod_params = ("mod", (sync_mod, async_mod))
 
 runner = CliRunner()
-app = typer.Typer()
-app.command()(mod.main)
 
 
-def test_completion_install_no_shell():
+@pytest.mark.parametrize(*mod_params)
+def test_completion_install_no_shell(mod):
     result = subprocess.run(
         [sys.executable, "-m", "coverage", "run", mod.__file__, "--install-completion"],
         stdout=subprocess.PIPE,
@@ -34,7 +37,8 @@ def test_completion_install_no_shell():
     )
 
 
-def test_completion_install_bash():
+@pytest.mark.parametrize(*mod_params)
+def test_completion_install_bash(bashrc_lock, mod):
     bash_completion_path: Path = Path.home() / ".bashrc"
     text = ""
     if bash_completion_path.is_file():
@@ -75,7 +79,8 @@ def test_completion_install_bash():
     )
 
 
-def test_completion_install_zsh():
+@pytest.mark.parametrize(*mod_params)
+def test_completion_install_zsh(zshrc_lock, mod):
     completion_path: Path = Path.home() / ".zshrc"
     text = ""
     if not completion_path.is_file():  # pragma: nocover
@@ -114,7 +119,8 @@ def test_completion_install_zsh():
     assert "compdef _tutorial001py_completion tutorial001.py" in install_content
 
 
-def test_completion_install_fish():
+@pytest.mark.parametrize(*mod_params)
+def test_completion_install_fish(fish_config_lock, mod):
     script_path = Path(mod.__file__)
     completion_path: Path = (
         Path.home() / f".config/fish/completions/{script_path.name}.fish"
@@ -145,12 +151,10 @@ def test_completion_install_fish():
     assert "Completion will take effect once you restart the terminal" in result.stdout
 
 
-runner = CliRunner()
-app = typer.Typer()
-app.command()(mod.main)
-
-
-def test_completion_install_powershell():
+@pytest.mark.parametrize(*mod_params)
+def test_completion_install_powershell(powershell_profile_lock, mod):
+    app = typer.Typer()
+    app.command()(mod.main)
     completion_path: Path = (
         Path.home() / f".config/powershell/Microsoft.PowerShell_profile.ps1"
     )
