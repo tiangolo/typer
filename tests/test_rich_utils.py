@@ -36,3 +36,29 @@ def test_rich_utils_click_rewrapp():
     assert "Hello World" in result.stdout
     result = runner.invoke(app, ["secondary"])
     assert "Hello Secondary World" in result.stdout
+
+
+def test_markdown_pars():
+    app = typer.Typer(rich_markup_mode="markdown")
+
+    @app.command()
+    def main():
+        """First line
+
+        Line 1
+
+        Line 2
+        """
+
+    result = runner.invoke(app, ["--help"])
+    lines = [l.strip() for l in result.stdout.split("\n")]
+    help_start = lines.index("First line")
+    assert help_start != -1
+    assert lines[help_start : help_start + 6] == [
+        "First line",
+        "",
+        "Line 1",
+        "",
+        "Line 2",
+        "",
+    ]
