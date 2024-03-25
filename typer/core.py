@@ -42,11 +42,18 @@ try:
 except ImportError:  # pragma: nocover
     rich = None  # type: ignore
 
+_is_rich_help = True
+
 if TYPE_CHECKING:  # pragma: no cover
     if _get_click_major() == 7:
         import click.shell_completion
 
 MarkupMode = Literal["markdown", "rich", None]
+
+
+def set_rich_help(switch: bool) -> None:
+    global _is_rich_help
+    _is_rich_help = switch
 
 
 # TODO: when deprecating Click 7, remove this
@@ -240,7 +247,7 @@ def _main(
             if not standalone_mode:
                 raise
             # Typer override
-            if rich:
+            if rich and _is_rich_help:
                 rich_utils.rich_format_error(e)
             else:
                 e.show()
@@ -270,7 +277,7 @@ def _main(
         if not standalone_mode:
             raise
         # Typer override
-        if rich:
+        if rich and _is_rich_help:
             rich_utils.rich_abort_error()
         else:
             click.echo(_("Aborted!"), file=sys.stderr)
@@ -729,7 +736,7 @@ class TyperCommand(click.core.Command):
         )
 
     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-        if not rich:
+        if not (rich and _is_rich_help):
             return super().format_help(ctx, formatter)
         return rich_utils.rich_format_help(
             obj=self,
@@ -791,7 +798,7 @@ class TyperGroup(click.core.Group):
         )
 
     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-        if not rich:
+        if not (rich and _is_rich_help):
             return super().format_help(ctx, formatter)
         return rich_utils.rich_format_help(
             obj=self,
