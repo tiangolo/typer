@@ -237,9 +237,11 @@ else:
 
         # recursively replace `str` instances inside of `GenericAlias` with `ForwardRef(arg)`
         converted = tuple(
-            ForwardRef(arg)
-            if isinstance(arg, str) and isinstance(tp, TypingGenericAlias)
-            else convert_generics(arg)
+            (
+                ForwardRef(arg)
+                if isinstance(arg, str) and isinstance(tp, TypingGenericAlias)
+                else convert_generics(arg)
+            )
             for arg in args
         )
 
