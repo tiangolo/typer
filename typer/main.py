@@ -702,6 +702,8 @@ def get_click_type(
 
     elif annotation == str:
         return click.STRING
+    elif annotation == bytes:
+        return click.STRING
     elif annotation == int:
         if parameter_info.min is not None or parameter_info.max is not None:
             min_ = None
