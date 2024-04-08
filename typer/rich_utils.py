@@ -5,7 +5,7 @@ import sys
 from collections import defaultdict
 from gettext import gettext as _
 from os import getenv
-from typing import Any, DefaultDict, Dict, Iterable, List, Optional, Union
+from typing import IO, Any, DefaultDict, Dict, Iterable, List, Optional, Union
 
 import click
 from rich import box
@@ -13,7 +13,7 @@ from rich.align import Align
 from rich.columns import Columns
 from rich.console import Console, RenderableType, group
 from rich.emoji import Emoji
-from rich.highlighter import RegexHighlighter
+from rich.highlighter import RegexHighlighter, ReprHighlighter
 from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.panel import Panel
@@ -708,3 +708,27 @@ def rich_abort_error() -> None:
     """Print richly formatted abort error."""
     console = _get_rich_console(stderr=True)
     console.print(ABORTED_TEXT, style=STYLE_ABORTED)
+
+
+def print(
+    *objects: Any,
+    sep: str = " ",
+    end: str = "\n",
+    file: Optional[IO[str]] = None,
+    flush: bool = False,
+) -> None:
+    r"""Print object(s) supplied via positional arguments.
+    This function has an identical signature to the built-in print.
+    For more advanced features, see the :class:`~rich.console.Console` class.
+    Args:
+        sep (str, optional): Separator between printed objects. Defaults to " ".
+        end (str, optional): Character to write at end of output. Defaults to "\\n".
+        file (IO[str], optional): File to write to, or None for stdout. Defaults to None.
+        flush (bool, optional): Has no effect as Rich always flushes output. Defaults to False.
+    """
+    from rich.console import Console
+
+    console = _get_rich_console()
+    console.highlighter = ReprHighlighter()
+    write_console = console if file is None else Console(file=file)
+    return write_console.print(*objects, sep=sep, end=end)
