@@ -120,6 +120,15 @@ In general, **Typer** tends to be the entry point to your program, taking the fi
 
 The best results for your command line application would be achieved combining both **Typer** and **Rich**.
 
+### Configuring Rich formatted output
+
+By default, **Typer** uses the **Rich** library to format text output.  However it's an optional dependency, and is used only if it is installed in your environment.  In case you would rather have finer-grained control over when **Typer** uses rich formatting, you can do so with the two package level functions shown below to control the output format globally.  This affects all `typer.Typer()` instances.
+
+ 1. `typer.set_rich_help(switch: bool)`
+ 2. `typer.set_rich_traceback(switch: bool)`
+
+The first one controls all help and **Click's** exception messages. The second one controls the format of the stack trace.
+
 ## "Standard Output" and "Standard Error"
 
 The way printing works underneath is that the **operating system** (Linux, Windows, macOS) treats what we print as if our CLI program was **writing text** to a "**virtual file**" called "**standard output**".

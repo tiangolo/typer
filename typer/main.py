@@ -15,6 +15,7 @@ import click
 
 from .completion import get_completion_inspect_parameters
 from .core import MarkupMode, TyperArgument, TyperCommand, TyperGroup, TyperOption
+from .core import set_rich_help as core_set_rich_help
 from .models import (
     AnyType,
     ArgumentInfo,
@@ -49,6 +50,17 @@ except ImportError:  # pragma: no cover
 _original_except_hook = sys.excepthook
 _typer_developer_exception_attr_name = "__typer_developer_exception__"
 
+_is_rich_traceback = True
+
+
+def set_rich_help(switch: bool) -> None:
+    core_set_rich_help(switch)
+
+
+def set_rich_traceback(switch: bool) -> None:
+    global _is_rich_traceback
+    _is_rich_traceback = switch
+
 
 def except_hook(
     exc_type: Type[BaseException], exc_value: BaseException, tb: Optional[TracebackType]
@@ -68,7 +80,7 @@ def except_hook(
     click_path = os.path.dirname(click.__file__)
     supress_internal_dir_names = [typer_path, click_path]
     exc = exc_value
-    if rich:
+    if rich and _is_rich_traceback:
         rich_tb = Traceback.from_exception(
             type(exc),
             exc,
