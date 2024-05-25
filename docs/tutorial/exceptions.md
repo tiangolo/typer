@@ -202,6 +202,17 @@ $ python main.py
 
 </div>
 
+
+## Set Output Width
+
+If you want to control the width of the yellow and red Rich exception borders, you can set the parameter `pretty_exceptions_width` to a specific integer (it's 100 by default):
+
+```Python hl_lines="3"
+{!../docs_src/exceptions/tutorial005.py!}
+```
+
+This prevents artificial line breaks in cases where there is sufficient horizontal space on the console.
+
 ## Disable Pretty Exceptions
 
 You can also entirely disable pretty exceptions with the parameter `pretty_exceptions_enable=False`:
