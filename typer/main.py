@@ -1,10 +1,11 @@
+import asyncio
 import inspect
 import os
 import sys
 import traceback
 from datetime import datetime
 from enum import Enum
-from functools import update_wrapper
+from functools import update_wrapper, wraps
 from pathlib import Path
 from traceback import FrameSummary, StackSummary
 from types import TracebackType
@@ -45,6 +46,7 @@ try:
 
 except ImportError:  # pragma: no cover
     rich = None  # type: ignore
+
 
 _original_except_hook = sys.excepthook
 _typer_developer_exception_attr_name = "__typer_developer_exception__"
@@ -233,12 +235,27 @@ class Typer:
             cls = TyperCommand
 
         def decorator(f: CommandFunctionType) -> CommandFunctionType:
+            def add_runner(f: CommandFunctionType) -> CommandFunctionType:
+                @wraps(f)
+                def run_wrapper(*args: Any, **kwargs: Any) -> Any:
+                    if sys.version_info >= (3, 7):
+                        return asyncio.run(f(*args, **kwargs))
+                    else:
+                        asyncio.get_event_loop().run_until_complete(f(*args, **kwargs))
+
+                return run_wrapper  # type: ignore
+
+            if inspect.iscoroutinefunction(f):
+                callback = add_runner(f)
+            else:
+                callback = f
+
             self.registered_commands.append(
                 CommandInfo(
                     name=name,
                     cls=cls,
                     context_settings=context_settings,
-                    callback=f,
+                    callback=callback,
                     help=help,
                     epilog=epilog,
                     short_help=short_help,
