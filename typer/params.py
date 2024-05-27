@@ -195,6 +195,8 @@ def Option(
     path_type: Union[None, Type[str], Type[bytes]] = None,
     # Rich settings
     rich_help_panel: Union[str, None] = None,
+    # Multiple values
+    separator: Optional[str] = None,
 ) -> Any:
     return OptionInfo(
         # Parameter
@@ -250,6 +252,7 @@ def Option(
         path_type=path_type,
         # Rich settings
         rich_help_panel=rich_help_panel,
+        separator=separator,
     )
 
 
