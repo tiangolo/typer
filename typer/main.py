@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, U
 from uuid import UUID
 
 import click
-from typing_extensions import TypeAlias
+from typing_extensions import Annotated, TypeAlias, get_args, get_origin
 
 from .completion import get_completion_inspect_parameters
 from .core import MarkupMode, TyperArgument, TyperCommand, TyperGroup, TyperOption
@@ -51,6 +51,8 @@ try:
     import pydantic
 
     def is_pydantic_type(type_: Any) -> bool:
+        if get_origin(type_) is Annotated:
+            return is_pydantic_type(get_args(type_)[0])
         return type_.__module__.startswith("pydantic") and not lenient_issubclass(
             type_, pydantic.BaseModel
         )
@@ -835,9 +837,7 @@ def lenient_issubclass(
 
 def is_complex_subtype(type_: Any) -> bool:
     # For pydantic types, such as `AnyUrl`, there's an extra `Annotated` layer that we don't need to treat as complex
-    return getattr(type_, "__origin__", None) is not None and not is_pydantic_type(
-        type_
-    )
+    return get_origin(type_) is not None and not is_pydantic_type(type_)
 
 
 def get_click_param(
