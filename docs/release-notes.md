@@ -1,7 +1,15 @@
 ## Latest Changes
 
+### Features
+
+* ✨ Add support for Python 3.12, tests in CI and official marker. PR [#807](https://github.com/tiangolo/typer/pull/807) by [@ivantodorovich](https://github.com/ivantodorovich).
+
 ### Internal
 
+* 🔨 Update docs Termynal scripts to not include line nums for local dev. PR [#882](https://github.com/tiangolo/typer/pull/882) by [@tiangolo](https://github.com/tiangolo).
+* ⬆ Bump black from 23.3.0 to 24.3.0. PR [#837](https://github.com/tiangolo/typer/pull/837) by [@dependabot[bot]](https://github.com/apps/dependabot).
+* ⬆ Bump pillow from 10.1.0 to 10.3.0. PR [#836](https://github.com/tiangolo/typer/pull/836) by [@dependabot[bot]](https://github.com/apps/dependabot).
+* ✅ Add CI configs to run tests on Windows and MacOS. PR [#824](https://github.com/tiangolo/typer/pull/824) by [@svlandeg](https://github.com/svlandeg).
 * 👷 Update GitHub Actions to upload and download artifacts. PR [#829](https://github.com/tiangolo/typer/pull/829) by [@tiangolo](https://github.com/tiangolo).
 * 👷 Tweak CI for test-redistribute, add needed env vars for slim. PR [#827](https://github.com/tiangolo/typer/pull/827) by [@tiangolo](https://github.com/tiangolo).
 * ✅ Generalize test suite to run on Windows. PR [#810](https://github.com/tiangolo/typer/pull/810) by [@svlandeg](https://github.com/svlandeg).
