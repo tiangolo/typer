@@ -68,12 +68,12 @@ The first step is to install **Typer**:
 ```console
 $ pip install typer
 ---> 100%
-Successfully installed typer click shellingham rich
+Successfully installed typer click shellingham rich pydantic
 ```
 
 </div>
 
-By default, `typer` comes with `rich` and `shellingham`.
+By default, `typer` comes with `rich`, `shellingham` and `pydantic`.
 
 !!! note
     If you are an advanced user and want to opt out of these default extra dependencies, you can instead install `typer-slim`.
