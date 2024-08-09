@@ -7,6 +7,8 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
+from .utils import needs_py310
+
 runner = CliRunner()
 
 
@@ -147,3 +149,23 @@ def test_custom_click_type():
 
     result = runner.invoke(app, ["0x56"])
     assert result.exit_code == 0
+
+
+@needs_py310
+def test_optional_via_uniontype():
+    app = typer.Typer()
+
+    @app.command()
+    def opt(user: str | None = None):
+        if user:
+            print(f"User: {user}")
+        else:
+            print("No user")
+
+    result = runner.invoke(app)
+    assert result.exit_code == 0
+    assert "No user" in result.output
+
+    result = runner.invoke(app, ["--user", "Camila"])
+    assert result.exit_code == 0
+    assert "User: Camila" in result.output
