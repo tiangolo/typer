@@ -14,7 +14,7 @@ from uuid import UUID
 import click
 from typing_extensions import Annotated, TypeAlias, get_args, get_origin
 
-from ._typing import get_args, get_origin, is_union
+from ._typing import is_union
 from .completion import get_completion_inspect_parameters
 from .core import MarkupMode, TyperArgument, TyperCommand, TyperGroup, TyperOption
 from .models import (
