@@ -12,9 +12,9 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, U
 from uuid import UUID
 
 import click
-from typing_extensions import Annotated, TypeAlias
+from typing_extensions import Annotated, TypeAlias, get_args, get_origin
 
-from ._typing import get_args, get_origin, is_union
+from ._typing import is_union
 from .completion import get_completion_inspect_parameters
 from .core import (
     DEFAULT_MARKUP_MODE,
@@ -754,9 +754,9 @@ def get_click_type(
     elif parameter_info.parser is not None:
         return click.types.FuncParamType(parameter_info.parser)
 
-    elif annotation == str:
+    elif annotation is str:
         return click.STRING
-    elif annotation == int:
+    elif annotation is int:
         if parameter_info.min is not None or parameter_info.max is not None:
             min_ = None
             max_ = None
@@ -767,7 +767,7 @@ def get_click_type(
             return click.IntRange(min=min_, max=max_, clamp=parameter_info.clamp)
         else:
             return click.INT
-    elif annotation == float:
+    elif annotation is float:
         if parameter_info.min is not None or parameter_info.max is not None:
             return click.FloatRange(
                 min=parameter_info.min,
@@ -776,7 +776,7 @@ def get_click_type(
             )
         else:
             return click.FLOAT
-    elif annotation == bool:
+    elif annotation is bool:
         return click.BOOL
     elif annotation == UUID:
         return click.UUID
