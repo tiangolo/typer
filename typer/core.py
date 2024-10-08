@@ -59,19 +59,23 @@ def _typer_param_setup_autocompletion_compat(
     self: click.Parameter,
     *,
     autocompletion: Optional[
-        Callable[[click.Context, List[str], str], List[Union[Tuple[str, str], str]]]
+        Callable[
+            [click.Context, click.core.Parameter, str],
+            List[Union[Tuple[str, str], str, "click.shell_completion.CompletionItem"]],
+        ]
     ] = None,
 ) -> None:
-    if autocompletion is not None and self._custom_shell_complete is None:
+    if self._custom_shell_complete is not None:
         import warnings
 
         warnings.warn(
-            "'autocompletion' is renamed to 'shell_complete'. The old name is"
-            " deprecated and will be removed in Click 8.1. See the docs about"
-            " 'Parameter' for information about new behavior.",
+            "In Typer, only the parameter 'autocompletion' is supported. "
+            "The support for 'shell_complete' is deprecated and will be removed in upcoming versions. ",
             DeprecationWarning,
             stacklevel=2,
         )
+
+    if autocompletion is not None:
 
         def compat_autocompletion(
             ctx: click.Context, param: click.core.Parameter, incomplete: str
@@ -80,9 +84,11 @@ def _typer_param_setup_autocompletion_compat(
 
             out = []
 
-            for c in autocompletion(ctx, [], incomplete):
+            for c in autocompletion(ctx, param, incomplete):
                 if isinstance(c, tuple):
                     use_completion = CompletionItem(c[0], help=c[1])
+                elif isinstance(c, CompletionItem):
+                    use_completion = c
                 else:
                     assert isinstance(c, str)
                     use_completion = CompletionItem(c)
@@ -265,6 +271,7 @@ class TyperArgument(click.core.Argument):
         expose_value: bool = True,
         is_eager: bool = False,
         envvar: Optional[Union[str, List[str]]] = None,
+        # Note that shell_complete is not fully supported and will be removed in future versions
         shell_complete: Optional[
             Callable[
                 [click.Context, click.Parameter, str],
@@ -399,6 +406,7 @@ class TyperOption(click.core.Option):
         expose_value: bool = True,
         is_eager: bool = False,
         envvar: Optional[Union[str, List[str]]] = None,
+        # Note that shell_complete is not fully supported and will be removed in future versions
         shell_complete: Optional[
             Callable[
                 [click.Context, click.Parameter, str],
