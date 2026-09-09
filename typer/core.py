@@ -18,6 +18,7 @@ from ._click import types
 from ._click.parser import _OptionParser
 from ._click.shell_completion import CompletionItem
 from ._typing import Literal
+from .exceptions import Abort, Exit
 from .utils import parse_boolean_env_var
 
 MarkupMode = Literal["markdown", "rich", None]
@@ -93,12 +94,16 @@ def _get_default_string(
     if show_default_is_str:
         default_string = f"({obj.show_default})"
     elif isinstance(default_value, (list, tuple)):
-        default_string = ", ".join(
+        parts = [
             _get_default_string(
                 obj, ctx=ctx, show_default_is_str=show_default_is_str, default_value=d
             )
             for d in default_value
-        )
+        ]
+        if all(not part for part in parts):
+            default_string = ""
+        else:
+            default_string = ", ".join(parts)
     elif isinstance(default_value, Enum):
         default_string = str(default_value.value)
     elif inspect.isfunction(default_value):
@@ -124,6 +129,8 @@ def _get_default_string(
         and not obj.secondary_opts
         and not default_value
     ):
+        default_string = ""
+    elif default_value is None:
         default_string = ""
     else:
         default_string = str(default_value)
@@ -159,13 +166,10 @@ def _main(
     rich_markup_mode: MarkupMode = DEFAULT_MARKUP_MODE,
     **extra: Any,
 ) -> Any:
-    # Typer override, duplicated from _click.main() to handle custom rich exceptions
-    # Verify that the environment is configured correctly, or reject
-    # further execution to avoid a broken script.
+    # Originally copied from _click.main(), adopted to handle custom rich exceptions etc
     if args is None:
         args = sys.argv[1:]
 
-        # Covered in Click tests
         if os.name == "nt" and windows_expand_args:  # pragma: no cover
             args = _click.utils._expand_args(args)
     else:
@@ -193,20 +197,18 @@ def _main(
                 ctx.exit()
         except EOFError as e:
             _click.echo(file=sys.stderr)
-            raise _click.exceptions.Abort() from e
+            raise Abort() from e
         except KeyboardInterrupt as e:
-            raise _click.exceptions.Exit(130) from e
+            raise Exit(130) from e
         except _click.exceptions.ClickException as e:
             if not standalone_mode:
                 raise
-            # Typer override
             if HAS_RICH and rich_markup_mode is not None:
                 from . import rich_utils
 
                 rich_utils.rich_format_error(e)
             else:
                 e.show()
-            # Typer override end
             sys.exit(e.exit_code)
         except OSError as e:
             if e.errno == errno.EPIPE:
@@ -215,7 +217,7 @@ def _main(
                 sys.exit(1)
             else:
                 raise
-    except _click.exceptions.Exit as e:
+    except Exit as e:
         if standalone_mode:
             sys.exit(e.exit_code)
         else:
@@ -228,17 +230,15 @@ def _main(
             # `ctx.exit(1)` and to `return 1`, the caller won't be able to
             # tell the difference between the two
             return e.exit_code
-    except _click.exceptions.Abort:
+    except Abort:
         if not standalone_mode:
             raise
-        # Typer override
         if HAS_RICH and rich_markup_mode is not None:
             from . import rich_utils
 
             rich_utils.rich_abort_error()
         else:
             _click.echo(_("Aborted!"), file=sys.stderr)
-        # Typer override end
         sys.exit(1)
 
 
@@ -303,7 +303,7 @@ class TyperArgument(_click.core.Parameter):
         if self.metavar is not None:
             return self.metavar
         assert self.name is not None, "self.name or self.metavar should be set"
-        return self.name.upper()
+        return self.name
 
     def _get_default_string(
         self,
@@ -380,17 +380,21 @@ class TyperArgument(_click.core.Parameter):
             help = f"{help}  {extra_str}" if help else f"{extra_str}"
         return name, help
 
-    def make_metavar(self, ctx: _click.Context) -> str:
+    def make_metavar(self, ctx: _click.Context, *, usage: bool = False) -> str:
         # Modified version of _click.core.Argument.make_metavar()
         # to include Argument name
         if self.metavar is not None:
             var = self.metavar
-            if not self.required and not var.startswith("["):
-                var = f"[{var}]"
-            return var
-        var = (self.name or "").upper()
-        if not self.required:
+            if var.startswith("[") or not usage:
+                return var
+            if not self.required:
+                return f"[{var}]"
+            return f"{{{var}}}"
+        var = self.name or ""
+        if usage and not self.required:
             var = f"[{var}]"
+        elif usage and self.required:
+            var = f"{{{var}}}"
         type_var = self.type.get_metavar(self, ctx=ctx)
         if type_var:
             var += f":{type_var}"
@@ -410,7 +414,7 @@ class TyperArgument(_click.core.Parameter):
             raise TypeError("Argument is marked as exposed, but does not have a name.")
         if len(decls) == 1:
             name = arg = decls[0]
-            name = name.replace("-", "_").lower()
+            name = name.replace("-", "_")
         else:
             raise TypeError(
                 "Arguments take exactly one parameter declaration, got"
@@ -419,10 +423,10 @@ class TyperArgument(_click.core.Parameter):
         return name, [arg], []
 
     def get_usage_pieces(self, ctx: _click.Context) -> list[str]:
-        return [self.make_metavar(ctx)]
+        return [self.make_metavar(ctx, usage=True)]
 
     def get_error_hint(self, ctx: _click.Context) -> str:
-        return f"'{self.make_metavar(ctx)}'"
+        return f"'{self.human_readable_name}'"
 
     def add_to_parser(self, parser: _OptionParser, ctx: _click.Context) -> None:
         parser.add_argument(dest=self.name, nargs=self.nargs, obj=self)
@@ -575,7 +579,7 @@ class TyperOption(_click.Parameter):
 
         if name is None and possible_names:
             possible_names.sort(key=lambda x: -len(x[0]))  # group long options first
-            name = possible_names[0][1].replace("-", "_").lower()
+            name = possible_names[0][1].replace("-", "_")
             if not name.isidentifier():
                 name = None
 

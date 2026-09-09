@@ -33,8 +33,8 @@ STYLE_OPTION = "bold cyan"
 STYLE_SWITCH = "bold green"
 STYLE_NEGATIVE_OPTION = "bold magenta"
 STYLE_NEGATIVE_SWITCH = "bold red"
-STYLE_METAVAR = "bold yellow"
-STYLE_METAVAR_SEPARATOR = "dim"
+STYLE_TYPES = "bold yellow"
+STYLE_TYPES_SEPARATOR = "dim"
 STYLE_USAGE = "yellow"
 STYLE_USAGE_COMMAND = "bold"
 STYLE_DEPRECATED = "red"
@@ -112,7 +112,7 @@ class OptionHighlighter(RegexHighlighter):
     highlights = [
         r"(^|\W)(?P<switch>\-\w+)(?![a-zA-Z0-9])",
         r"(^|\W)(?P<option>\-\-[\w\-]+)(?![a-zA-Z0-9])",
-        r"(?P<metavar>\<[^\>]+\>)",
+        r"(?P<types>\<[^\>]+\>)",
         r"(?P<usage>Usage: )",
     ]
 
@@ -125,17 +125,17 @@ class NegativeOptionHighlighter(RegexHighlighter):
 
 
 # Highlighter to make [ | ] and <> dim
-class MetavarHighlighter(RegexHighlighter):
+class TypesHighlighter(RegexHighlighter):
     highlights = [
-        r"^(?P<metavar_sep>(\[|<))",
-        r"(?P<metavar_sep>\|)",
-        r"(?P<metavar_sep>(\]|>))(\.\.\.)?$",
+        r"^(?P<types_sep>(\[|<))",
+        r"(?P<types_sep>\|)",
+        r"(?P<types_sep>(\]|>))(\.\.\.)?$",
     ]
 
 
 highlighter = OptionHighlighter()
 negative_highlighter = NegativeOptionHighlighter()
-metavar_highlighter = MetavarHighlighter()
+types_highlighter = TypesHighlighter()
 
 
 def _has_ansi_character(text: str) -> bool:
@@ -150,8 +150,8 @@ def _get_rich_console(stderr: bool = False) -> Console:
                 "switch": STYLE_SWITCH,
                 "negative_option": STYLE_NEGATIVE_OPTION,
                 "negative_switch": STYLE_NEGATIVE_SWITCH,
-                "metavar": STYLE_METAVAR,
-                "metavar_sep": STYLE_METAVAR_SEPARATOR,
+                "types": STYLE_TYPES,
+                "types_sep": STYLE_TYPES_SEPARATOR,
                 "usage": STYLE_USAGE,
             },
         ),
@@ -222,14 +222,18 @@ def _get_help_text(
     if remaining_paragraphs:
         # Add a newline inbetween the header and the remaining paragraphs
         yield Text("")
-        # Join with double linebreaks for markdown and Rich markup
-        remaining_lines = "\n\n".join(remaining_paragraphs)
+        remaining_lines = _fix_linebreaks(remaining_paragraphs, markup_mode)
 
         yield _make_rich_text(
             text=remaining_lines,
             style=STYLE_HELPTEXT,
             markup_mode=markup_mode,
         )
+
+
+def _fix_linebreaks(paragraphs: list[str], markup_mode: MarkupModeStrict) -> str:
+    # Join with double linebreaks for markdown and Rich markup
+    return "\n\n".join(paragraphs)
 
 
 def _get_parameter_help(
@@ -364,31 +368,44 @@ def _print_options_panel(
         opt_short_strs = []
         secondary_opt_long_strs = []
         secondary_opt_short_strs = []
+
+        # check whether argument has a metavar name or type set
+        metavar_name = None
+        metavar_type = None
+        metavar_str = param.make_metavar(ctx=ctx)
+        if isinstance(param, TyperArgument):
+            if param.metavar is not None:
+                metavar_name = param.metavar
+            else:
+                metavar_name = param.name or ""
+        if isinstance(param, TyperOption):
+            metavar_type = metavar_str
+        elif isinstance(param, TyperArgument):
+            metavar_type = param.type.get_metavar(param=param, ctx=ctx)
+            if metavar_type is None:
+                metavar_type = f"<{param.type.name}>"
+
         for opt_str in param.opts:
             if "--" in opt_str:
                 opt_long_strs.append(opt_str)
+            elif metavar_name:
+                opt_short_strs.append(metavar_name)
             else:
                 opt_short_strs.append(opt_str)
         for opt_str in param.secondary_opts:
             if "--" in opt_str:
                 secondary_opt_long_strs.append(opt_str)
+            elif metavar_name:  # pragma: no cover
+                secondary_opt_short_strs.append(metavar_name)
             else:
                 secondary_opt_short_strs.append(opt_str)
 
-        # Column for a metavar, if we have one
-        metavar = Text(style=STYLE_METAVAR, overflow="fold")
-        metavar_str = param.make_metavar(ctx=ctx)
-        # Do it ourselves if this is a positional argument
-        if (
-            isinstance(param, TyperArgument)
-            and param.name
-            and metavar_str == param.name.upper()
-        ):
-            metavar_str = param.type.name.upper()
+        # Column for recording the type
+        types_data = Text(style=STYLE_TYPES, overflow="fold")
 
-        # Skip booleans and choices (handled above)
-        if metavar_str != "BOOLEAN":
-            metavar.append(metavar_str)
+        # Fetch type
+        if metavar_type and "bool" not in metavar_type.lower():
+            types_data.append(metavar_type)
 
         # Range - from
         # https://github.com/pallets/click/blob/c63c70dabd3f86ca68678b4f00951f78f52d0270/src/click/core.py#L2698-L2706  # noqa: E501
@@ -400,7 +417,7 @@ def _print_options_panel(
         ):
             range_str = param.type._describe_range()
             if range_str:
-                metavar.append(RANGE_STRING.format(range_str))
+                types_data.append(RANGE_STRING.format(range_str))
 
         # Required asterisk
         required: str | Text = ""
@@ -414,7 +431,7 @@ def _print_options_panel(
                 highlighter(",".join(opt_short_strs)),
                 negative_highlighter(",".join(secondary_opt_long_strs)),
                 negative_highlighter(",".join(secondary_opt_short_strs)),
-                metavar_highlighter(metavar),
+                types_highlighter(types_data),
                 _get_parameter_help(
                     param=param,
                     ctx=ctx,
@@ -672,7 +689,7 @@ def rich_format_help(
     if obj.epilog:
         # Remove single linebreaks, replace double with single
         lines = obj.epilog.split("\n\n")
-        epilogue = "\n".join([x.replace("\n", " ").strip() for x in lines])
+        epilogue = _fix_linebreaks(lines, markup_mode)
         epilogue_text = _make_rich_text(text=epilogue, markup_mode=markup_mode)
         console.print(Padding(Align(epilogue_text, pad=False), 1))
 
@@ -690,12 +707,13 @@ def rich_format_error(self: _click.ClickException) -> None:
     console = _get_rich_console(stderr=True)
     ctx: _click.Context | None = getattr(self, "ctx", None)
     if ctx is not None:
-        console.print(ctx.get_usage())
+        console.print(highlighter(ctx.get_usage()), style=STYLE_USAGE_COMMAND)
 
     if ctx is not None and ctx.command.get_help_option(ctx) is not None:
         console.print(
             RICH_HELP.format(
-                command_path=ctx.command_path, help_option=ctx.help_option_names[0]
+                command_path=escape(ctx.command_path),
+                help_option=ctx.help_option_names[0],
             ),
             style=STYLE_ERRORS_SUGGESTION,
         )
